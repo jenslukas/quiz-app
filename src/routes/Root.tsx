@@ -27,7 +27,7 @@ export default function Root() {
     const items: MenuItem[] = [
         getItem('', '1', <Link to="/">Home</Link>),
         getItem('', '2', <Link to="/runlist">Quiz Runs</Link>),        
-        getItem('', '3', <Link to="/question">Validate</Link>),
+        getItem('', '3', <Link to="/validate">Validate</Link>),
     ];
     const {
         token: { colorBgContainer },

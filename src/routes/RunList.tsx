@@ -15,6 +15,11 @@ interface DataType {
 
 const columns: ColumnsType<DataType> = [
     {
+        title: 'id',
+        dataIndex: 'id',
+        key: 'id',
+    },
+    {
         title: 'Code',
         dataIndex: 'code',
         key: 'code',
@@ -61,9 +66,7 @@ export default class RunList extends Component<{}, IState> {
     };
 
     handleOk = () => {
-        console.log('Form send');
         let code = this.formRef.current?.getFieldValue('code');
-        console.log(code);
         API.createQuizRun(code).then(res => {
             this.setState(state => ({
                 runs: state.runs,
@@ -96,7 +99,6 @@ export default class RunList extends Component<{}, IState> {
 
     updateRuns = () => {
         API.getListOfRuns().then(res => {
-            console.log(res.data)
             this.setState({ runs: res.data });
         })
     }

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { FunctionComponent, useEffect } from "react";
 import API from '../api'
 import { Form, Checkbox, Button } from "antd";
 import { useParams } from "react-router-dom";
@@ -9,107 +9,121 @@ type Answer = {
 }
 
 type State = {
+    id: number,
     question: string
     answers: Answer[],
     selectedAnswers: string[]
 }
 
-interface QuestionProps {
-    runId: number,
+type QuizParams = {
+    runId?: string;
 }
 
-export default class Question extends React.Component<QuestionProps, State> {
-    public static defaultProps: Partial<QuestionProps> = {
-        runId: 0
-    };
+const Question : FunctionComponent = () => {
+    const [state, setState] = React.useState<State>({
+        id: 0,
+        question: '',
+        answers: [{ id: 0, answer: '' }],
+        selectedAnswers: []
+    })
 
-    constructor(props: QuestionProps) {
-        super(props);
+    const params = useParams<QuizParams>();
 
-        let { runId } = useParams();
-        console.log('got runId: ' + runId);
+    let runId = params !== undefined ? parseInt(params.runId || '0') : 0;
 
-        this.state = {
-            question: '',
-            answers: [{ id: 0, answer: '' }],
-            selectedAnswers: []
-        }
-    }
-
-    onSend = (values: any) => {
+    const onSend = (values: any) => {
         console.log('Form send');
-        console.log(this.state);
+        console.log(state);
         let request = {
-            answerIds: this.state.selectedAnswers
+            answerIds: state.selectedAnswers,
+            questionId: state.id
         }
         console.log(request)
-        API.saveValidatedQuestion(request).then(res => {
-            if (res.status > 200 && res.status < 300) {
-                API.getQuestionToValidate().then(res => {
-                    res.data.selectedAnswers = [];
-                    this.setState(res.data);
-                })
-            }
+        if(runId === 0) {
+            API.saveValidatedQuestion(request).then(res => {
+                if (res.status > 200 && res.status < 300) {
+                    API.getQuestionToValidate().then(res => {
+                        res.data.selectedAnswers = [];
+                        setState(res.data);
+                    })
+                }
+    
+                console.log(res);
+            });            
+        } else {
+            API.answerQuestion(runId, request).then(res => {
+                if (res.status > 200 && res.status < 300) {
+                    API.getNextQuestion(runId).then(res => {
+                        console.log('set state', res.data);
+                        res.data.selectedAnswers = [];                
+                        setState(res.data);
+                    })
+                }
+            });
+        }
 
-            console.log(res);
-        });
     };
 
-    onValuesChange = (event: any) => {
+    const onValuesChange = (event: any) => {
+        console.log(state);
         let selectedAnswerKey = Object.keys(event)[0];
         if (event[selectedAnswerKey] === true) {
             // add to selected answers if not already in
-            if (!this.state.selectedAnswers.includes(selectedAnswerKey)) {
-                this.state.selectedAnswers.push(selectedAnswerKey);
+            if (!state.selectedAnswers.includes(selectedAnswerKey)) {
+                state.selectedAnswers.push(selectedAnswerKey);
             }
         } else {
             // remove from selected answers array if it's in
-            if (this.state.selectedAnswers.includes(selectedAnswerKey)) {
-                for (var i = 0; i < this.state.selectedAnswers.length; i++) {
-                    if (this.state.selectedAnswers[i] === selectedAnswerKey) {
-                        this.state.selectedAnswers.splice(i, 1);
+            if (state.selectedAnswers.includes(selectedAnswerKey)) {
+                for (var i = 0; i < state.selectedAnswers.length; i++) {
+                    if (state.selectedAnswers[i] === selectedAnswerKey) {
+                        state.selectedAnswers.splice(i, 1);
                     }
                 }
             }
         }
 
-        console.log(this.state.selectedAnswers)
-    }
+        console.log(state.selectedAnswers)
+    }    
 
-    updateTable = () => {
-        if(this.props.runId === 0) {
+    const updateTable = () => {
+        if(runId === 0) {
             API.getQuestionToValidate().then(res => {
-                this.setState(res.data);
+                console.log('validate');
+                res.data.selectedAnswers = [];
+                setState(res.data);
             })                
         } else {
-            API.getNextQuestion(this.props.runId).then(res => {
-                this.setState(res.data);
+            API.getNextQuestion(runId).then(res => {
+                console.log('set state', res.data);
+                res.data.selectedAnswers = [];                
+                setState(res.data);
             })                 
         }
     
     }
 
-    componentDidMount(): void {
-        console.log("Question mounted");
-        this.updateTable();
-    }
+    useEffect(() => {
+        console.log('useEffect');
+        updateTable();
+    }, []);    
 
-    render() {
-        return (
+    return (
             <div>
-                <h3>{this.state.question}</h3>
-                <Form onValuesChange={this.onValuesChange}>
-                    {this.state.answers.map((answer, index) => (
+                <h3>{state.question}</h3>
+                <Form onValuesChange={onValuesChange}>
+                    {state.answers.map((answer, index) => (
                         <Form.Item key={String(answer.id)} name={String(answer.id)} valuePropName="checked">
                             <Checkbox key={String(answer.id)} name={String(answer.id)}> {answer.answer}  </Checkbox>
                         </Form.Item>
                     ))
                     }
                     <Form.Item>
-                        <Button onClick={this.onSend}>Absenden</Button>
+                        <Button onClick={onSend}>Absenden</Button>
                     </Form.Item>
                 </Form>
             </div>
-        )
-    }
+    )
 }
+
+export default Question;
