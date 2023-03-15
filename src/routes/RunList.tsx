@@ -12,41 +12,6 @@ interface DataType {
     correctAnswers: number;
 }
 
-const columns: ColumnsType<DataType> = [
-    {
-        title: 'id',
-        dataIndex: 'id',
-        key: 'id',
-    },
-    {
-        title: 'Name',
-        dataIndex: 'code',
-        key: 'code',
-    },
-    {
-        title: 'Open Questions',
-        dataIndex: 'openQuestions',
-        key: 'openQuestions',
-    },
-    {
-        title: 'Closed Questions',
-        dataIndex: 'closedQuestions',
-        key: 'closedQuestions',
-    },
-    {
-        title: 'Correct Answers',
-        dataIndex: 'correctAnswers',
-        key: 'correctAnswers',
-    },
-    {
-        title: 'Action',
-        key: 'action',
-        render: (text, record) => (
-            <Space size="middle"><Link to={{ pathname: `/question/${record.id}` }}>Continue</Link> <Button type="link">Create wrong run</Button> </Space>
-        ),
-    }
-];
-
 interface IState {
     runs: DataType[],
     isModalOpen: boolean
@@ -56,6 +21,41 @@ interface IState {
 const RunList: FunctionComponent = () => {
     const [form] = Form.useForm();
     const code = Form.useWatch('code', form);
+
+    const columns: ColumnsType<DataType> = [
+        {
+            title: 'id',
+            dataIndex: 'id',
+            key: 'id',
+        },
+        {
+            title: 'Name',
+            dataIndex: 'code',
+            key: 'code',
+        },
+        {
+            title: 'Open Questions',
+            dataIndex: 'openQuestions',
+            key: 'openQuestions',
+        },
+        {
+            title: 'Closed Questions',
+            dataIndex: 'closedQuestions',
+            key: 'closedQuestions',
+        },
+        {
+            title: 'Correct Answers',
+            dataIndex: 'correctAnswers',
+            key: 'correctAnswers',
+        },
+        {
+            title: 'Action',
+            key: 'action',
+            render: (text, record) => (
+                <Space size="middle"><Link to={{ pathname: `/question/${record.id}` }}>Continue</Link> <Button type="link" onClick={createWrongRun(record.id)}>Create wrong run</Button> </Space>
+            ),
+        }
+    ];    
 
     const defaultData = {
         runs: [{
@@ -76,6 +76,12 @@ const RunList: FunctionComponent = () => {
             isModalOpen: true
         }));
     };
+
+    const createWrongRun = (id: number) => () => {
+        API.createQuizRunFromWrong(id).then(res => {
+            updateRuns();
+        });
+    }
 
     const handleOk = () => {
         API.createQuizRun(code).then(res => {

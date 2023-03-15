@@ -1,6 +1,6 @@
-# Getting Started with Create React App
+# About
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Just a little try out project for testing some react stuff. It's a little frontend, which connects to a REST API and allows to create and run quizzes with multiple choice answers
 
 ## Available Scripts
 
