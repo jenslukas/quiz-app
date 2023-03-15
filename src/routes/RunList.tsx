@@ -20,7 +20,7 @@ const columns: ColumnsType<DataType> = [
         key: 'id',
     },
     {
-        title: 'Code',
+        title: 'Name',
         dataIndex: 'code',
         key: 'code',
     },
@@ -116,7 +116,7 @@ export default class RunList extends Component<{}, IState> {
                 <Table columns={columns} dataSource={this.state.runs} />
                 <Modal title="Create new Quiz run" open={this.state.isModalOpen} onOk={this.handleOk} onCancel={this.handleCancel}>
                     <Form ref={this.formRef}>
-                        <Form.Item label="code" name="code">
+                        <Form.Item label="Name" name="code">
                             <Input />
                         </Form.Item>
                     </Form>
