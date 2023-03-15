@@ -1,25 +1,18 @@
-import React, { FunctionComponent, useEffect } from "react";
+import React, { FunctionComponent, useEffect, useMemo } from "react";
 import API from '../api'
-import { Form, Checkbox, Button } from "antd";
+import { Form, Checkbox, Button, List, notification, Typography, Switch, Space  } from "antd";
+import { CheckCircleTwoTone, CloseCircleTwoTone } from "@ant-design/icons";
 import { useParams } from "react-router-dom";
+import { AnswerType, QuestionType } from "../helper/types";
 
-type Answer = {
-    id: number,
-    answer: string
-}
 
-type Question = {
-    id: number,
-    question: string,
-    answers: Answer[]
-}
-
+const { Text } = Typography;
 
 type State = {
     correct?: boolean,
-    formerAnswers?: string[],
-    formerQuestion?: Question,
-    nextQuestion: Question,
+    formerAnswers?: AnswerType[],
+    formerQuestion?: QuestionType,
+    nextQuestion: QuestionType,
     selectedAnswers: string[]
 }
 
@@ -28,14 +21,16 @@ type QuizParams = {
 }
 
 const Question: FunctionComponent = () => {
-    const defaultData = {
+    const [api, contextHolder] = notification.useNotification();
+
+    const defaultData = useMemo(() => ({
         nextQuestion: {
             id: 0,
             question: '',
             answers: [{ id: 0, answer: '' }],
         },
         selectedAnswers: []        
-    }
+    }),[]);
 
     const [state, setState] = React.useState<State>(defaultData)
 
@@ -43,6 +38,7 @@ const Question: FunctionComponent = () => {
 
     let runId = params !== undefined ? parseInt(params.runId || '0') : 0;
     let showResult = true;
+    let showResultsOnWrongOnly = true;
 
     const onSend = (values: any) => {
         let request = {
@@ -75,6 +71,7 @@ const Question: FunctionComponent = () => {
                         let next = res.data;
                         next.selectedAnswers = [];
                         setState(next);
+                        showResultNotification(next);
                     } else {
                         setState(defaultData);
                     }
@@ -85,7 +82,7 @@ const Question: FunctionComponent = () => {
     };
 
     const onValuesChange = (event: any) => {
-        console.log(state);
+        console.log('Value change');
         let selectedAnswerKey = Object.keys(event)[0];
         if (event[selectedAnswerKey] === true) {
             // add to selected answers if not already in
@@ -104,45 +101,115 @@ const Question: FunctionComponent = () => {
         }
     }
 
-    const updateTable = () => {
-        if (runId === 0) {
-            API.getQuestionToValidate().then(res => {
-                let next = {
-                    nextQuestion: res.data,
-                    selectedAnswers: []
-                }
-
-                setState(next);
-            }).catch(err => {
-                console.log('error', err);
-                setState(defaultData);
-            });
-        } else {
-            API.getNextQuestion(runId).then(res => {
-                let next = {
-                    nextQuestion: res.data,
-                    selectedAnswers: []
-                }
-
-                setState(next);
-            }).catch(err => {
-                console.log('error', err);
-                setState(defaultData);
-            });
-        }
-
+    const showResultsChange = () => {
+        showResult = (showResult === true ? false : true);
     }
 
+    const showResultsOnWrongChange = () => {
+        showResultsOnWrongOnly = (showResultsOnWrongOnly === true ? false : true);
+    }    
+
+    // show result
+    const showResultNotification = (state : State) => {
+        if(showResult === false) return;
+        if(showResultsOnWrongOnly === true && state.correct === true) return;
+        
+        let formerAnswers = state.formerAnswers ?? [];
+        let formerQuestion = state.formerQuestion;
+
+        function isCorrect(currentAnswer: AnswerType) {
+            let found = false;
+            for(let i = 0; i < formerAnswers.length; i++) {
+                if(currentAnswer.id === formerAnswers[i].id) {
+                    found = true;
+
+                    if(currentAnswer.correct === true) {
+                        return true;
+                    }
+                }
+            }
+
+            if(!found && currentAnswer.correct === false) {
+                return true;
+            }
+
+            return false;
+        }
+
+        if(formerQuestion !== undefined) {
+            api.open({
+                message: formerQuestion.question,
+                description: (
+                    <List itemLayout="horizontal" dataSource={formerQuestion.answers} renderItem={(answer, index) => (
+                        <List.Item>
+                        <List.Item.Meta
+                          description={
+                            <>
+                                { answer.correct ? <CheckCircleTwoTone twoToneColor="green"/> : <CloseCircleTwoTone twoToneColor="red"/> } &nbsp;
+                                {isCorrect(answer) ? answer.answer : <Text type="danger">{answer.answer}</Text>}
+                            </>
+                        }
+                        />
+                      </List.Item>
+              )
+    
+              } />
+                ),
+                duration: 0,
+            });
+        }
+    };    
+    
+
     useEffect(() => {
+        console.log('useEffect');
+
+        const updateTable = () => {
+            if (runId === 0) {
+                API.getQuestionToValidate().then(res => {
+                    let next = {
+                        nextQuestion: res.data,
+                        selectedAnswers: []
+                    }
+    
+                    setState(next);
+                }).catch(err => {
+                    console.log('error', err);
+                    setState(defaultData);
+                });
+            } else {
+                API.getNextQuestion(runId).then(res => {
+                    let next = {
+                        nextQuestion: res.data,
+                        selectedAnswers: []
+                    }
+    
+                    setState(next);
+                }).catch(err => {
+                    console.log('error', err);
+                    setState(defaultData);
+                });
+            }
+    
+        }
+
         updateTable();
-    }, []);
+    }, [defaultData, runId]);
 
     if (state.nextQuestion.id === 0) {
         return (<div><h3>Keine Fragen mehr vorhanden</h3></div>);
     } else {
 
         return (
-            <div>
+            <>
+            <div style={{textAlign: 'right'}}>
+            <Space>
+                <Switch defaultChecked onChange={showResultsChange} /> Show Results
+                
+                <Switch defaultChecked onChange={showResultsOnWrongChange} /> on wrong answer only
+                </Space>
+            </div>
+            <div>{contextHolder}
                 <h3>{state.nextQuestion.question}</h3>
                 <Form onValuesChange={onValuesChange}>
                     {state.nextQuestion.answers.map((answer, index) => (
@@ -156,6 +223,7 @@ const Question: FunctionComponent = () => {
                     </Form.Item>
                 </Form>
             </div>
+            </>
         )
     }
 
