@@ -20,25 +20,25 @@ type QuizParams = {
 }
 
 const Question : FunctionComponent = () => {
-    const [state, setState] = React.useState<State>({
+    const defaultData = {
         id: 0,
         question: '',
         answers: [{ id: 0, answer: '' }],
         selectedAnswers: []
-    })
+    }
+
+    const [state, setState] = React.useState<State>(defaultData)
 
     const params = useParams<QuizParams>();
 
     let runId = params !== undefined ? parseInt(params.runId || '0') : 0;
 
     const onSend = (values: any) => {
-        console.log('Form send');
-        console.log(state);
         let request = {
             answerIds: state.selectedAnswers,
             questionId: state.id
         }
-        console.log(request)
+
         if(runId === 0) {
             API.saveValidatedQuestion(request).then(res => {
                 if (res.status > 200 && res.status < 300) {
@@ -46,15 +46,12 @@ const Question : FunctionComponent = () => {
                         res.data.selectedAnswers = [];
                         setState(res.data);
                     })
-                }
-    
-                console.log(res);
+                }    
             });            
         } else {
             API.answerQuestion(runId, request).then(res => {
                 if (res.status > 200 && res.status < 300) {
                     API.getNextQuestion(runId).then(res => {
-                        console.log('set state', res.data);
                         res.data.selectedAnswers = [];                
                         setState(res.data);
                     })
@@ -82,35 +79,41 @@ const Question : FunctionComponent = () => {
                 }
             }
         }
-
-        console.log(state.selectedAnswers)
     }    
 
     const updateTable = () => {
         if(runId === 0) {
             API.getQuestionToValidate().then(res => {
-                console.log('validate');
                 res.data.selectedAnswers = [];
                 setState(res.data);
-            })                
+            }).catch(err => {
+                console.log('error', err);
+                setState(defaultData);
+            });
         } else {
             API.getNextQuestion(runId).then(res => {
-                console.log('set state', res.data);
                 res.data.selectedAnswers = [];                
                 setState(res.data);
-            })                 
+            }).catch(err => {
+                console.log('error', err);
+                setState(defaultData);
+            });              
         }
     
     }
 
     useEffect(() => {
-        console.log('useEffect');
         updateTable();
     }, []);    
 
+    if(state.id === 0) {
+        return (<div><h3>Keine Fragen mehr vorhanden</h3></div>);
+    } else {
+console.log('current state', state);
     return (
-            <div>
-                <h3>{state.question}</h3>
+
+                    <div>
+                  <h3>{state.question}</h3>
                 <Form onValuesChange={onValuesChange}>
                     {state.answers.map((answer, index) => (
                         <Form.Item key={String(answer.id)} name={String(answer.id)} valuePropName="checked">
@@ -122,8 +125,10 @@ const Question : FunctionComponent = () => {
                         <Button onClick={onSend}>Absenden</Button>
                     </Form.Item>
                 </Form>
-            </div>
+                </div>
     )
+    }
+
 }
 
 export default Question;
