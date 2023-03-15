@@ -47,7 +47,7 @@ export default function Root() {
             <Content style={{ padding: '0 50px' }}>
                 <div className="site-layout-content" style={{ background: colorBgContainer }}><Outlet /></div>
             </Content>
-            <Footer style={{ textAlign: 'center' }}>©2023 Created by Lukas Laboriaties</Footer>
+            <Footer style={{ textAlign: 'center' }}>©2023 Created by LukLabs</Footer>
         </Layout>
     )
 }
