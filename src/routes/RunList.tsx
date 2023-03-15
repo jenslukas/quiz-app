@@ -1,7 +1,6 @@
 import { Form, Button, Divider, Input, Modal, Space, FormInstance } from "antd";
 import Table, { ColumnsType } from "antd/es/table";
-import React from "react";
-import { Component } from "react";
+import React, { FunctionComponent, useEffect } from "react";
 import { Link } from "react-router-dom";
 import API from "../api";
 
@@ -43,7 +42,7 @@ const columns: ColumnsType<DataType> = [
         title: 'Action',
         key: 'action',
         render: (text, record) => (
-            <Space size="middle"><Link to={{ pathname: `/question/${record.id}` }}>Continue</Link></Space>
+            <Space size="middle"><Link to={{ pathname: `/question/${record.id}` }}>Continue</Link> <Button type="link">Create wrong run</Button> </Space>
         ),
     }
 ];
@@ -54,74 +53,74 @@ interface IState {
 }
 
 
-export default class RunList extends Component<{}, IState> {
-    formRef = React.createRef<FormInstance>();
+const RunList: FunctionComponent = () => {
+    const [form] = Form.useForm();
+    const code = Form.useWatch('code', form);
 
+    const defaultData = {
+        runs: [{
+            id: 1,
+            code: '123',
+            openQuestions: 1,
+            closedQuestions: 2,
+            correctAnswers: 3
+        }],
+        isModalOpen: false
+    };
 
-    showModal = () => {
-        this.setState(state => ({
+    const [state, setState] = React.useState<IState>(defaultData);
+
+    const showModal = () => {
+        setState(state => ({
             runs: state.runs,
             isModalOpen: true
         }));
     };
 
-    handleOk = () => {
-        let code = this.formRef.current?.getFieldValue('code');
+    const handleOk = () => {
         API.createQuizRun(code).then(res => {
-            this.setState(state => ({
+            setState(state => ({
                 runs: state.runs,
                 isModalOpen: false
             }));
-            this.updateRuns();
+            updateRuns();
         });
     };
 
-    handleCancel = () => {
-        this.setState(state => ({
+    const handleCancel = () => {
+        setState(state => ({
             runs: state.runs,
             isModalOpen: false
         }));
     };
 
-    constructor(props: {}) {
-        super(props);
-        this.state = {
-            runs: [{
-                id: 1,
-                code: '123',
-                openQuestions: 1,
-                closedQuestions: 2,
-                correctAnswers: 3
-            }],
-            isModalOpen: false
-        };
-    }
-
-    updateRuns = () => {
+    const updateRuns = () => {
         API.getListOfRuns().then(res => {
-            this.setState({ runs: res.data });
+            setState({ runs: res.data, isModalOpen: false });
         })
     }
 
-    async componentDidMount(): Promise<void> {
-        this.updateRuns();
-    }
+    useEffect(() => {
+        console.log('usef effect');
+        updateRuns();
+    }, []);
 
-    render() {
-        return (
-            <div>
-                <h1>Run List</h1>
-                <Button style={{ float: 'right' }} type="primary" onClick={this.showModal}>Create new Run</Button><br />
-                <Divider />
-                <Table columns={columns} dataSource={this.state.runs} />
-                <Modal title="Create new Quiz run" open={this.state.isModalOpen} onOk={this.handleOk} onCancel={this.handleCancel}>
-                    <Form ref={this.formRef}>
-                        <Form.Item label="Name" name="code">
-                            <Input />
-                        </Form.Item>
-                    </Form>
-                </Modal>
-            </div>
-        );
-    }
+
+    return (
+        <div>
+            <h1>Run List</h1>
+            <Button style={{ float: 'right' }} type="primary" onClick={showModal}>Create new Run</Button><br />
+            <Divider />
+            <Table columns={columns} dataSource={state.runs} />
+            <Modal title="Create new Quiz run" open={state.isModalOpen} onOk={handleOk} onCancel={handleCancel}>
+                <Form form={form}>
+                    <Form.Item label="Name" name="code">
+                        <Input />
+                    </Form.Item>
+                </Form>
+            </Modal>
+        </div>
+    );
 }
+
+export default RunList;
