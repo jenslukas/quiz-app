@@ -39,11 +39,13 @@ const Question: FunctionComponent = () => {
     let runId = params !== undefined ? parseInt(params.runId || '0') : 0;
     let showResult = true;
     let showResultsOnWrongOnly = true;
+    let showRandom = false;
 
     const onSend = (values: any) => {
         let request = {
             answerIds: state.selectedAnswers,
-            questionId: state.nextQuestion.id
+            questionId: state.nextQuestion.id,
+            random: showRandom
         }
 
         if (runId === 0) {
@@ -108,6 +110,10 @@ const Question: FunctionComponent = () => {
     const showResultsOnWrongChange = () => {
         showResultsOnWrongOnly = (showResultsOnWrongOnly === true ? false : true);
     }    
+
+    const showRandomChange = () => {
+        showRandom = (showRandom === true ? false : true);
+    }
 
     // show result
     const showResultNotification = (state : State) => {
@@ -207,6 +213,8 @@ const Question: FunctionComponent = () => {
                 <Switch defaultChecked onChange={showResultsChange} /> Show Results
                 
                 <Switch defaultChecked onChange={showResultsOnWrongChange} /> on wrong answer only
+
+                <Switch onChange={showRandomChange} /> Random questions              
                 </Space>
             </div>
             <div>{contextHolder}
